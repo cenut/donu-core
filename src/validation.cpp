@@ -3148,37 +3148,6 @@ static bool FindUndoPos(CValidationState &state, int nFile, CDiskBlockPos &pos, 
     return true;
 }
 
-
-
-
-    if (block.IsProofOfStake()) {
-
-        // Second transaction must be coinstake, the rest must not be
-        if (block.vtx.empty() || !block.vtx[1]->IsCoinStake())
-            return state.DoS(100, error("CheckBlock() : second tx is not coinstake"));
-        for (unsigned int i = 2; i < block.vtx.size(); i++)
-            if (block.vtx[i]->IsCoinStake())
-                return state.DoS(100, error("CheckBlock() : more than one coinstake"));
-    }
-
-    if (chainActive.Height() > 0) {
-        int64_t devFee = Params().GetEmissionsAmount();
-        bool foundDevFee = false;
-        bool isProofOfStake = block.IsProofOfStake();
-        const auto &devTx = block.vtx[isProofOfStake];
-
-        for (size_t i = 0; i < devTx->vout.size(); i++) {
-            if (devTx->vout[i].scriptPubKey == PlatformScript() && devTx->vout[i].nValue >= devFee) {
-                foundDevFee = true;
-                break;
-            }
-        }
-
-        if (!foundDevFee && !sporkManager.IsSporkActive(Spork::SPORK_15_POS_DISABLED))
-            return state.DoS(100, error("CheckBlock() : Coinbase does not pay to the platform"),
-                REJECT_INVALID, "bad-cb-reward-invalid");
-    }
-
     // Check transactions
     for (const auto& tx : block.vtx)
         if (!CheckTransaction(*tx, state, true))
